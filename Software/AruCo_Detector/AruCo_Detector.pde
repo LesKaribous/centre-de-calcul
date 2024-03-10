@@ -20,7 +20,7 @@ void setup() {
   // La librairie Vidéo de processing semble mal gérer autre chose que le YUY
   // La camera fonctionne à des résolutions plus importantes en MJPEG
   // Voir issue https://github.com/processing/processing-video/issues/92
-  // Solution utiliser une pipeline gstreamer. 
+  // Solution utiliser une pipeline gstreamer.
   // Dans le terminal :
   // gst-launch-1.0 v4l2src ! 'image/jpeg,width=1280,height=720,framerate=30/1' ! jpegdec ! videoconvert ! autovideosink
   // Permet de vérifier que la camera s'affiche correctement.
@@ -35,12 +35,12 @@ void draw() {
   if (video.available()) {
     video.read();
   }
-  
+
   // Calculez le rapport d'aspect de la vidéo et de l'écran
   float rapportVideo = 1280 / 720.0;
   float rapportEcran = (float) width / height;
   int newWidth, newHeight;
-  
+
   // Ajustez la taille de l'affichage de la vidéo pour conserver le rapport d'aspect
   if (rapportEcran > rapportVideo) {
     // L'écran est plus large que la vidéo
@@ -80,42 +80,43 @@ void draw() {
   }
 
   float facteurEchelleX = (float)newWidth / 1280;
-float facteurEchelleY = (float)newHeight / 720;
+  float facteurEchelleY = (float)newHeight / 720;
 
-stroke(0, 255, 0); // Couleur verte pour le cadre
-noFill(); // Pas de remplissage pour le cadre
+  stroke(0, 255, 0); // Couleur verte pour le cadre
+  noFill(); // Pas de remplissage pour le cadre
 
-for (int i = 0; i < markersCorners.size(); i++) {
-  int id = idsList.get(i);
-  if (isTagToDetect(id)) {
-    Mat corner = markersCorners.get(i);
-    float[] points = new float[(int) corner.total() * 2];
-    corner.get(0, 0, points);
+  for (int i = 0; i < markersCorners.size(); i++) {
+    int id = idsList.get(i);
+    if (isTagToDetect(id)) {
+      Mat corner = markersCorners.get(i);
+      float[] points = new float[(int) corner.total() * 2];
+      corner.get(0, 0, points);
 
-    beginShape();
-    for (int j = 0; j < points.length; j += 2) {
-      // Ajustez les points en appliquant le facteur d'échelle et les décalages
-      vertex(x + points[j] * facteurEchelleX, y + points[j + 1] * facteurEchelleY);
+      beginShape();
+      for (int j = 0; j < points.length; j += 2) {
+        // Ajustez les points en appliquant le facteur d'échelle et les décalages
+        vertex(x + points[j] * facteurEchelleX, y + points[j + 1] * facteurEchelleY);
+      }
+      endShape(CLOSE);
+
+      // Ajustez également le centre du tag pour l'affichage du texte
+      float centerX = 0;
+      float centerY = 0;
+      for (int j = 0; j < points.length; j += 2) {
+        centerX += points[j];
+        centerY += points[j + 1];
+      }
+      centerX = x + (centerX / 4) * facteurEchelleX;
+      centerY = y + (centerY / 4) * facteurEchelleY;
+
+      fill(0, 255, 0); // Couleur verte pour le texte
+      textSize(20);
+      textAlign(CENTER, CENTER);
+      text("ID: " + id + "\nPos: (" + (int)centerX + "," + (int)centerY + ")", centerX, centerY);
+      noFill(); // Réinitialiser pour les cadres suivants
     }
-    endShape(CLOSE);
-
-    // Ajustez également le centre du tag pour l'affichage du texte
-    float centerX = 0;
-    float centerY = 0;
-    for (int j = 0; j < points.length; j += 2) {
-      centerX += points[j];
-      centerY += points[j + 1];
-    }
-    centerX = x + (centerX / 4) * facteurEchelleX;
-    centerY = y + (centerY / 4) * facteurEchelleY;
-
-    fill(0, 255, 0); // Couleur verte pour le texte
-    textSize(20);
-    textAlign(CENTER, CENTER);
-    text("ID: " + id + "\nPos: (" + (int)centerX + "," + (int)centerY + ")", centerX, centerY);
-    noFill(); // Réinitialiser pour les cadres suivants
   }
-}
+  displayFPS(); // Affichez les FPS dans le coin supérieur droit
 }
 
 // Fonction pour vérifier si un tag spécifique doit être détecté
@@ -130,4 +131,11 @@ boolean isTagToDetect(int id) {
 
 void captureEvent(Capture c) {
   c.read();
+}
+
+void displayFPS() {
+  fill(255, 0, 0); // Couleur du texte en rouge pour contraster avec la plupart des arrière-plans
+  textSize(16); // Taille du texte
+  textAlign(RIGHT, TOP); // Alignez le texte en haut à droite
+  text("FPS: " + nf(frameRate, 0, 2), width - 10, 10); // Affichez les FPS avec 2 chiffres après la virgule
 }
